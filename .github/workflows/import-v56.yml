@@ -1,0 +1,45 @@
+name: Import IMSAI Monitor V5.6
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Reconstruct and verify package
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat .bootstrap/part-*.b64 > /tmp/v56.b64
+          echo "a928dba26cb6c3f530bff478785651fc187496ab5ef4579ab6d0a8b3617fb5b1  /tmp/v56.b64" | sha256sum -c -
+          base64 -d /tmp/v56.b64 > /tmp/v56.zip
+          echo "87c5359310cdb5a4d9a4b648b08e6b80a330948e02dd14b4f89bab7f464f102c  /tmp/v56.zip" | sha256sum -c -
+          rm -rf /tmp/v56
+          mkdir -p /tmp/v56
+          unzip -q /tmp/v56.zip -d /tmp/v56
+          cp -a /tmp/v56/IMSAI_MONITOR_V5.6_TARGET/. .
+          rm -rf .bootstrap .upload
+          rm -f .github/workflows/import-v56.yml
+          rmdir .github/workflows .github 2>/dev/null || true
+          python3 verify_target_rom.py
+
+      - name: Commit imported source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet && exit 0
+          git commit -m "Import IMSAI Monitor V5.6 target codebase"
+          git push
