@@ -1,7 +1,7 @@
 PYTHON ?= python3
 Z80ASM ?= z80asm
 BUILD_DIR ?= build
-BUILDER := tools/build_from_source.py
+BUILDER := tools/native_build.py
 
 .PHONY: all build verify release clean
 
