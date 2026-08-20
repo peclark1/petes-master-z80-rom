@@ -2,8 +2,8 @@
 """Assemble the IMSAI Monitor V5.6 two-page ROM from its Z80 source.
 
 The checked-in source is intentionally close to the historical SLR Z80ASM
-syntax used by the original monitor.  Ubuntu's z80asm is stricter in a few
-places.  This program performs syntax-only normalization, assembles each 4K
+syntax used by the original monitor. Ubuntu's z80asm is stricter in a few
+places. This program performs syntax-only normalization, assembles each 4K
 ROM page with the real z80asm assembler, pads each page to exactly 4096 bytes,
 and joins the pages into the 8192-byte 27C64/28C64 programming image.
 
@@ -101,10 +101,6 @@ def transform_unquoted(text: str, transform) -> str:
     return "".join(result)
 
 
-def uppercase_unquoted(text: str) -> str:
-    return transform_unquoted(text, str.upper)
-
-
 def insert_missing_db_commas(code: str) -> str:
     """Fix historical constructs such as: DB 'Menu Error'CR,LF."""
     if not re.search(r"\b(?:DB|DEFB)\b", code, flags=re.IGNORECASE):
@@ -145,7 +141,7 @@ def normalize_unquoted_segment(segment: str) -> str:
     # SLR treats identifiers case-insensitively; stock Ubuntu z80asm does not.
     segment = segment.upper()
 
-    # z80asm identifiers cannot end in '$'.  Preserve the semantic name.
+    # z80asm identifiers cannot end in '$'. Preserve the semantic name.
     segment = re.sub(
         r"(?<![A-Z0-9_])([A-Z_][A-Z0-9_]*)\$(?![A-Z0-9_])",
         r"\1_DOLLAR",
@@ -231,7 +227,7 @@ def extract_rom_page(source: str, page: int) -> list[str]:
     else:
         selected = lines[outer_else + 1 : outer_endif]
 
-    # The source's final END is outside the ROM_PAGE IF.  Add one explicitly.
+    # The source's final END is outside the ROM_PAGE IF. Add one explicitly.
     return selected + ["", "\tEND"]
 
 
@@ -251,7 +247,7 @@ def normalize_page(lines: list[str]) -> str:
                 seen_org = True
             else:
                 # z80asm changes its PC on ORG but does not put padding in the
-                # output file.  DEFS makes the physical ROM holes explicit.
+                # output file. DEFS makes the physical ROM holes explicit.
                 code = f"{org.group(1)}DEFS {org.group(2)}-$,0"
 
         normalized.append(code + comment)
@@ -293,7 +289,9 @@ def assemble_page(page: int, assembler: str, build_dir: Path) -> bytes:
     raw_path = build_dir / f".{tag.lower()}-raw.bin"
     list_path = build_dir / f"IMSAI_MONITOR_V5.6_TARGET_{tag}_4K.lst"
     label_path = build_dir / f"IMSAI_MONITOR_V5.6_TARGET_{tag}_4K.labels"
-    asm_path.write_text(strict_source, encoding="ascii")
+    # Keep the source's legacy one-byte encoding in comments. The assembler
+    # ignores comments, but latin-1 lets us preserve the file losslessly.
+    asm_path.write_text(strict_source, encoding="latin-1")
 
     run_assembler(assembler, asm_path, raw_path, list_path, label_path)
     data = raw_path.read_bytes()
