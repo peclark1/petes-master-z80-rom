@@ -28,9 +28,10 @@ jobs:
 
       - name: Assemble and verify ROM
         run: |
-          # Diagnostic hot-fix while the native assembler path is being proven.
-          # This is removed once the builder change is folded into the branch.
+          # Diagnostic hot-fixes while the native assembler path is being proven.
+          # These are removed once the builder changes are folded into the branch.
           sed -i 's/normalized.append(f"ERROR\\tEQU/normalized.append(f"ERROR:\\tEQU/' tools/build_from_source.py
+          sed -i '/segment = segment.upper()/a\    segment = re.sub(r"(?<![A-Z0-9_])([A-F][0-9A-F]*H)\\b", r"0\\1", segment)' tools/build_from_source.py
           make verify
 
       - name: Upload ROM build and diagnostics
