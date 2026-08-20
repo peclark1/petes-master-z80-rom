@@ -27,7 +27,11 @@ jobs:
           cp IMSAI_MONITOR_V5.6_TARGET_HIGH_4K.BIN build/reference-high.bin
 
       - name: Assemble and verify ROM
-        run: make verify
+        run: |
+          # Diagnostic hot-fix while the native assembler path is being proven.
+          # This is removed once the builder change is folded into the branch.
+          sed -i 's/normalized.append(f"ERROR\\tEQU/normalized.append(f"ERROR:\\tEQU/' tools/build_from_source.py
+          make verify
 
       - name: Upload ROM build and diagnostics
         if: always()
