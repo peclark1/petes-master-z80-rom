@@ -20,6 +20,12 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y z80asm
 
+      - name: Stage reference images for diagnostics
+        run: |
+          mkdir -p build
+          cp IMSAI_MONITOR_V5.6_TARGET_LOW_4K.BIN build/reference-low.bin
+          cp IMSAI_MONITOR_V5.6_TARGET_HIGH_4K.BIN build/reference-high.bin
+
       - name: Assemble and verify ROM
         run: make verify
 
@@ -28,9 +34,12 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: imsai-monitor-v56-rom
+          include-hidden-files: true
           path: |
             build/*.BIN
             build/*.HEX
+            build/*.bin
+            build/.*-raw.bin
             build/SHA256SUMS.txt
             build/*.lst
             build/*.labels
