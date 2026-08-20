@@ -1,0 +1,36 @@
+name: Build ROM from Z80 source
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Z80 assembler
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y z80asm
+
+      - name: Assemble and verify ROM
+        run: make verify
+
+      - name: Upload ROM build
+        uses: actions/upload-artifact@v4
+        with:
+          name: imsai-monitor-v56-rom
+          path: |
+            build/*.BIN
+            build/*.HEX
+            build/SHA256SUMS.txt
+            build/*.lst
+            build/*.labels
+          if-no-files-found: error
