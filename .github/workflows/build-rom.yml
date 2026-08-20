@@ -32,6 +32,36 @@ jobs:
           # These are removed once the builder changes are folded into the branch.
           sed -i 's/normalized.append(f"ERROR\\tEQU/normalized.append(f"ERROR:\\tEQU/' tools/build_from_source.py
           sed -i '/segment = segment.upper()/a\    segment = re.sub(r"(?<![A-Z0-9_])([A-F][0-9A-F]*H)\\b", r"0\\1", segment)' tools/build_from_source.py
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('IMSAI_MONITOR_V5.6_TARGET_MERGED.z80')
+          text = path.read_text(encoding='latin-1')
+
+          # The reviewed merged source retained two layout transcription
+          # differences from the released byte-verified V5.6 image. Exercise
+          # the intended corrections here before folding them into the builder.
+          needle = 'SDCONO:\tIN\tA,CONSOL_STATUS'
+          pos = text.find(needle)
+          if pos < 0:
+              needle = 'SDCONO:\tIN\tA,(CONSOL_STATUS)'
+              pos = text.find(needle)
+          if pos < 0:
+              raise SystemExit('could not locate first high-page SDCONO')
+          text = text[:pos] + '\tRET\n' + text[pos:]
+
+          old_pad = '\t\tDB 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0\n\nMENUMSG:'
+          new_pad = '\t\tDB 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0\n\nMENUMSG:'
+          if old_pad not in text:
+              raise SystemExit('could not locate low-page menu padding')
+          text = text.replace(old_pad, new_pad, 1)
+
+          old_tail = "DB\tCR,LF,'@=Flush Printer',CR,LF,LF,'$'"
+          new_tail = "DB\tCR,LF,'@=Flush Printer',CR,LF,CR,LF,'$'"
+          if old_tail not in text:
+              raise SystemExit('could not locate low-page menu tail')
+          text = text.replace(old_tail, new_tail, 1)
+          path.write_text(text, encoding='latin-1')
+          PY
           make verify
 
       - name: Upload ROM build and diagnostics
